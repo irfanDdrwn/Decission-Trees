@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediksi Churn Pelanggan dengan Decision Tree</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1c2430; --muted:#5b6675; --line:#e3e7ec; --accent:#2f6fdd; --bad:#c0392b; --good:#1e8e5a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12161c; --card:#1b212a; --text:#e8ecf1; --muted:#9aa6b5; --line:#2b3440; --accent:#6aa0ff; --bad:#ff7a6b; --good:#4cc790; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
+  header, main { max-width:1000px; margin:0 auto; padding:0 20px; }
+  header { padding-top:28px; } h1 { font-size:1.6rem; margin:0 0 4px; } header p { margin:0; color:var(--muted); }
+  main { display:grid; gap:16px; padding-bottom:40px; margin-top:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h2 { font-size:1.05rem; margin:0 0 4px; } .sub { color:var(--muted); font-size:.9rem; margin:0 0 12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; }
+  label { display:block; font-size:.85rem; color:var(--muted); margin-bottom:3px; }
+  select, input { width:100%; font:inherit; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); }
+  .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  button { font:inherit; padding:9px 16px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .err { border-left:4px solid var(--bad); padding:8px 12px; margin-bottom:12px; background:rgba(192,57,43,.08); border-radius:6px; }
+  .res { border-left:6px solid var(--good); } .res.bad { border-left-color:var(--bad); }
+  .big { font-size:1.5rem; font-weight:700; } .good { color:var(--good); } .bad-t { color:var(--bad); }
+  ol { margin:6px 0 0; padding-left:20px; } li { margin:3px 0; }
+  table { width:100%; border-collapse:collapse; font-size:.92rem; } th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  .bar { display:flex; align-items:center; gap:8px; margin:5px 0; font-size:.9rem; } .bar b { width:200px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bar i { display:block; height:12px; background:var(--accent); border-radius:6px; } .bar span { color:var(--muted); width:46px; }
+  img { max-width:100%; border-radius:8px; background:#fff; } footer { text-align:center; color:var(--muted); font-size:.85rem; padding:0 20px 28px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Prediksi Churn Pelanggan Telekomunikasi</h1>
+</header>
+<main>
+  <form method="post" class="card" id="f">
+    <h2>Data Pelanggan</h2>
+    <p class="sub">Isi profil pelanggan, atau pakai contoh, lalu klik Prediksi.</p>
+    {% if errors %}<div class="err"><b>Periksa masukan:</b><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+    <div class="grid">
+      {% for name, label, kind, opts in fields %}
+      <div>
+        <label for="{{ name }}">{{ label }}</label>
+        {% if kind == "number" %}
+          <input type="number" step="any" id="{{ name }}" name="{{ name }}" value="{{ values.get(name, '') }}" required>
+        {% else %}
+          <select id="{{ name }}" name="{{ name }}">
+            {% for o in opts %}<option value="{{ o }}" {% if values.get(name) == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
+          </select>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="actions">
+      <button class="primary" type="submit">Prediksi</button>
+      <button type="button" data-ex="loyal">Contoh: pelanggan loyal</button>
+      <button type="button" data-ex="risk">Contoh: pelanggan berisiko</button>
+    </div>
+  </form>
+
+  {% if result %}
+  <section class="card res {% if result.label == 1 %}bad{% endif %}">
+    <div class="big {% if result.label == 1 %}bad-t{% else %}good{% endif %}">
+      {% if result.label == 1 %}Berisiko Churn{% else %}Tidak Berisiko (cenderung bertahan){% endif %}
+    </div>
+    <p>Probabilitas churn menurut daun pohon: <b>{{ '%.1f'|format(result.proba * 100) }}%</b> (berdasarkan {{ result.n }} pelanggan latih pada daun yang sama).</p>
+    <b>Alur keputusan pohon:</b>
+    <ol>{% for step in result.path %}<li>{{ step }}</li>{% endfor %}</ol>
+    <p class="sub" style="margin-top:10px">
+      {% if result.label == 1 %}Saran: tawarkan promo retensi atau paket kontrak jangka panjang sebelum pelanggan berhenti.
+      {% else %}Saran: pertahankan layanan; pantau pelanggan jika kondisi berubah.{% endif %}
+      Prediksi ini bersifat pendukung keputusan, bukan kepastian.
+    </p>
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <h2>Perbandingan Model (data uji, {{ metrics.n_test }} pelanggan)</h2>
+    <p class="sub">Model A dibiarkan tumbuh bebas (overfit); Model B dipangkas (max_depth={{ metrics.best_params.max_depth }}, min_samples_leaf={{ metrics.best_params.min_samples_leaf }}). Aplikasi memakai Model B.</p>
+    <table>
+      <tr><th>Metrik</th><th>Model A (tanpa batas)</th><th>Model B (pruned)</th></tr>
+      <tr><td>Kedalaman / jumlah daun</td><td>{{ metrics.model_a.depth }} / {{ metrics.model_a.leaves }}</td><td>{{ metrics.model_b.depth }} / {{ metrics.model_b.leaves }}</td></tr>
+      <tr><td>Akurasi latih</td><td>{{ '%.3f'|format(metrics.model_a.acc_train) }}</td><td>{{ '%.3f'|format(metrics.model_b.acc_train) }}</td></tr>
+      <tr><td>Akurasi uji</td><td>{{ '%.3f'|format(metrics.model_a.acc_test) }}</td><td>{{ '%.3f'|format(metrics.model_b.acc_test) }}</td></tr>
+      <tr><td>Precision (churn)</td><td>{{ '%.3f'|format(metrics.model_a.precision) }}</td><td>{{ '%.3f'|format(metrics.model_b.precision) }}</td></tr>
+      <tr><td>Recall (churn)</td><td>{{ '%.3f'|format(metrics.model_a.recall) }}</td><td>{{ '%.3f'|format(metrics.model_b.recall) }}</td></tr>
+      <tr><td>F1 (churn)</td><td>{{ '%.3f'|format(metrics.model_a.f1) }}</td><td>{{ '%.3f'|format(metrics.model_b.f1) }}</td></tr>
+      <tr><td>AUC</td><td>{{ '%.3f'|format(metrics.model_a.auc) }}</td><td>{{ '%.3f'|format(metrics.model_b.auc) }}</td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Fitur Paling Berpengaruh (Model B)</h2>
+    {% for k, v in importance %}<div class="bar"><b title="{{ k }}">{{ k }}</b><i style="width: {{ (v * 300)|round|int }}px"></i><span>{{ '%.3f'|format(v) }}</span></div>{% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Pohon Keputusan Model B</h2>
+    <p class="sub">Biru = condong churn, oranye = condong bertahan.</p>
+    <img src="/static/tree.jpg" alt="Visualisasi pohon keputusan Model B">
+  </section>
+</main>
+<script>
+const EX = {{ examples|tojson }};
+document.querySelectorAll('[data-ex]').forEach(b => b.addEventListener('click', () => {
+  const e = EX[b.dataset.ex];
+  for (const k in e) { const el = document.getElementById(k); if (el) el.value = e[k]; }
+}));
+</script>
+</body>
+</html>

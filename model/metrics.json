@@ -1,0 +1,79 @@
+{
+  "model_a": {
+    "model": "Model A (tanpa batas)",
+    "depth": 22,
+    "leaves": 1109,
+    "acc_train": 0.9980475683351083,
+    "acc_test": 0.7253371185237757,
+    "precision": 0.4832904884318766,
+    "recall": 0.5026737967914439,
+    "f1": 0.4927916120576671,
+    "auc": 0.6539951949159111,
+    "cm": [
+      [
+        834,
+        201
+      ],
+      [
+        186,
+        188
+      ]
+    ]
+  },
+  "model_b": {
+    "model": "Model B (pruned)",
+    "depth": 3,
+    "leaves": 8,
+    "acc_train": 0.7914447994320198,
+    "acc_test": 0.7821149751596878,
+    "precision": 0.6700507614213198,
+    "recall": 0.35294117647058826,
+    "f1": 0.46234676007005254,
+    "auc": 0.8183290707587384,
+    "cm": [
+      [
+        970,
+        65
+      ],
+      [
+        242,
+        132
+      ]
+    ]
+  },
+  "best_params": {
+    "max_depth": 3,
+    "min_samples_leaf": 50
+  },
+  "cv_auc": 0.818730497776998,
+  "cv_auc_best": 0.8308397668433944,
+  "n_train": 5634,
+  "n_test": 1409,
+  "churn_rate": 0.2653698707936959,
+  "ranges": {
+    "tenure": [
+      0.0,
+      72.0
+    ],
+    "MonthlyCharges": [
+      18.25,
+      118.75
+    ],
+    "TotalCharges": [
+      18.8,
+      8684.8
+    ]
+  },
+  "importance": {
+    "Contract_Month-to-month": 0.6022066800487108,
+    "InternetService_Fiber optic": 0.1912894414777473,
+    "tenure": 0.17207377709966448,
+    "MonthlyCharges": 0.019070255949477335,
+    "Contract_Two year": 0.009653553367487565,
+    "OnlineSecurity_No": 0.005706292056912446,
+    "gender": 0.0,
+    "SeniorCitizen": 0.0,
+    "PaperlessBilling": 0.0,
+    "PhoneService": 0.0
+  }
+}

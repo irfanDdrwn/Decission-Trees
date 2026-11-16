@@ -1,0 +1,8 @@
+# Hanya untuk melatih ulang model lewat notebook (bukan untuk deployment)
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+joblib
+notebook
